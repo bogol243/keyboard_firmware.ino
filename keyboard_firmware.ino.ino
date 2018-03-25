@@ -21,11 +21,11 @@ char prevState[5][8]={{0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0}};
-char layout[5][8]={{'?',220,'6','7','8','9','0','?'},
-                 {'?','?','y','u','i','o','p','[?'},
-                 {'[',']','h','j','k','l',';','\''},
-                 {'=','?','n','m',',','.','/','?'},
-                 {KEY_RETURN,KEY_BACKSPACE,' ',KEY_LEFT_ARROW,KEY_UP_ARROW,KEY_RIGHT_ARROW,KEY_DOWN_ARROW,'?'}
+unsigned char layout[5][8]={{'?',254,'6','7','8','9','0','?'},
+                            {'?','?','y','u','i','o','p','?'},
+                            {'[',']','h','j','k','l',';','\''},
+                            {'=','?','n','m',',','.','/','?'},
+                            {KEY_RETURN,KEY_BACKSPACE,' ',KEY_LEFT_ARROW,KEY_UP_ARROW,KEY_RIGHT_ARROW,KEY_DOWN_ARROW,'?'}
   };
 
 void setup() {
@@ -97,7 +97,8 @@ void sendPreses(){
   for(int row=0;row<5;row++){
     for(int col=0;col<8;col++){
       if(keys[row][col]<prevState[row][col]){ //if button press after being unpresed
-        Keyboard.press(layout[row][col]);  
+        Keyboard.press(layout[row][col]);
+        if(layout[row][col]==254) Keyboard.print("reprogram button");
       }else if(keys[row][col]>prevState[row][col]){
         Keyboard.release(layout[row][col]);
       }
@@ -117,5 +118,4 @@ void loop() {
       Keyboard.releaseAll() ;  
     }
 }
-
 
