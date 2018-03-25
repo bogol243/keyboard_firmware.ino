@@ -114,7 +114,7 @@ void loop() {
       }
       
     }else{
-      Keyboard.releaseAll();  
+      Keyboard.releaseAll() ;  
     }
 }
 
