@@ -19,7 +19,7 @@ char prevState_right[5][8]={{0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0},
                       {0,0,0,0,0,0,0,0}};
-unsigned char layout_right[5][8]={{'?',254,'6','7','8','9','0','?'},
+unsigned char layout_right[5][8]={{'?',254,'6','7','8','9','0',KEY_BACKSPACE},
                             {'?','?','y','u','i','o','p','?'},
                             {'[',']','h','j','k','l',';','\''},
                             {'=','?','n','m',',','.','/','?'},
@@ -39,11 +39,11 @@ char prevState_left[5][8]={{0,0,0,0,0,0,0,0},
                         {0,0,0,0,0,0,0,0},
                         {0,0,0,0,0,0,0,0}};
                       
-unsigned char layout_left[5][8]={{'?','1','2','3','4','5','?','?'},
-                                 {'?','q','y','u','i','o','?','?'},
-                                 {'?',']','h','j','k','l',';','\''},
-                                 {'?','?','n','m',',','.','/','?'},
-                                 {'?','?','?','?','?','?','?'}};
+unsigned char layout_left[5][8]={{KEY_ESC,'1','2','3','4','5','?','?'},
+                                 {KEY_TAB,'q','w','e','r','t','?','?'},
+                                 {KEY_CAPS_LOCK,'a','s','d','f','g',';','\''},
+                                 {KEY_LEFT_SHIFT,'z','x','c','v','b','/','?'},
+                                 {KEY_LEFT_CTRL,KEY_LEFT_GUI,KEY_LEFT_ALT,'?','?',KEY_RIGHT_SHIFT,KEY_RIGHT_CTRL,KEY_RETURN}};
 
 uint8_t matrixSize = sizeof(layout_left);
 uint8_t row = 0;
@@ -51,7 +51,7 @@ uint8_t col = 0;;
 
 
 void setup() {
-    pinMode(3,INPUT_PULLUP);
+    pinMode(9,INPUT_PULLUP);
     Wire.begin();
     Keyboard.begin();
     
@@ -67,7 +67,7 @@ void setup() {
 }
 void readMatrix() {
     // iterate the columns
-    Wire.request(1,matrix_size);
+    Wire.requestFrom(8,40);
     for (int colIndex=0; colIndex < colCount; colIndex++) {
         // col: set to output to low
         byte curCol = cols_right[colIndex];
@@ -86,14 +86,13 @@ void readMatrix() {
     }
     row = 0;
     col = 0;
-    while(Wire.avaliable()<matrix_size)
-    while(Wire.avaliable()){
-      if(col>=colCount){
-        col = 0;
-        row++;
-      }
-      keys_left[row][col++];
+    while (Wire.available()) { // slave may send less than requested
+    if(col>7) {
+      col = 0;
+      row++;  
     }
+    keys_left[row][col++]=Wire.read();
+  }
 }
 
 
@@ -110,7 +109,7 @@ void sendPreses(){
 
       //left part
       if(keys_left[row][col]<prevState_left[row][col]){ //if button press after being unpresed
-        Keyboard.press(layout_right[row][col]);
+        Keyboard.press(layout_left[row][col]);
       }else if(keys_left[row][col]>prevState_left[row][col]){
         Keyboard.release(layout_left[row][col]);
       }
@@ -118,7 +117,7 @@ void sendPreses(){
   }
 }
 void loop() {
-    if(digitalRead(3) != LOW){
+    if(digitalRead(9) != LOW){
       readMatrix();
       //readMatrix_left();
       sendPreses();
@@ -130,8 +129,11 @@ void loop() {
       for(int i = 0; i<5; i++){
         memcpy(prevState_right[i], keys_right[i], sizeof(keys_right[i]));
       }
+      for(int i = 0; i<5; i++){
+        memcpy(prevState_left[i], keys_left[i], sizeof(keys_left[i]));
+      }
     }else{
-      Keyboard.releaseAll() ;  
+      Keyboard.releaseAll();
     }
 }
 
