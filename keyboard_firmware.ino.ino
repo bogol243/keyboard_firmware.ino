@@ -4,12 +4,20 @@
 //
 #define QWERTY 0
 #define WORKMAN_NATIVE 1
-#define ZUBACHEV 2
+#define WORKMAN_PHONETIC 2
 #define LEFT 0
 #define RIGHT 1
 
+// I decided to use this values because its represents symbols like ┤╡╢
+// which nobody defenetly won't use by direct typing
+#define LAYOUT_TYPE_SWITCH 180
+#define LAYOUT_NEXT 181
+#define LAYOUT_PREV 182
 
-unsigned byte currentLayout = 0;
+#define QUASI_RUSSIAN_SPEC_SYMBOLS 183
+
+
+unsigned char currentLayout = 0;
 
 
 
@@ -50,19 +58,34 @@ unsigned char layouts[][2][5][8]={
      {'=','?','n','m',',','.','/','?'},
      {KEY_RETURN,KEY_BACKSPACE,' ',KEY_LEFT_ARROW,KEY_UP_ARROW,KEY_RIGHT_ARROW,KEY_DOWN_ARROW,'?'}}
   }
-  ,//ZUBACHEV'S LAYOUT
+  ,//WORKMAN PHONETIC LAYOUT
   {
     //left
     {{KEY_ESC,'1','2','3','4','5','?','?'},
-     {KEY_TAB,'q','w','e','r','t','?','?'},
-     {KEY_CAPS_LOCK,'a','s','d','f','g',';','\''},
-     {KEY_LEFT_SHIFT,'z','x','c','v','b','/','?'},
+     {KEY_TAB,'i','l','h','d',',','?','?'},
+     {KEY_CAPS_LOCK,'f','c','x','n','u',';','\''},
+     {KEY_LEFT_SHIFT,'p','[','v','w',';','/','?'},
      {KEY_LEFT_CTRL,KEY_LEFT_GUI,KEY_LEFT_ALT,'?','?',KEY_RIGHT_SHIFT,KEY_RIGHT_CTRL,KEY_RETURN}},
     //right
     {{'?',254,'6','7','8','9','0',KEY_BACKSPACE},
-     {'?','?','y','u','i','o','p','?'},
-     {'[',']','h','j','k','l',';','\''},
-     {'=','?','n','m',',','.','/','?'},
+     {'?','?','m','a','e','g',']','?'},
+     {'[',']','s','y','t','j','b','\''},
+     {'=','?','r','k',',','.','o','?'},
+     {KEY_RETURN,KEY_BACKSPACE,' ',KEY_LEFT_ARROW,KEY_UP_ARROW,KEY_RIGHT_ARROW,KEY_DOWN_ARROW,'?'}}
+  }
+  ,//WORKMAN PHONETIC QUASI LAYOUT
+  {
+    //left
+    {{KEY_ESC,'1','2','3','4','5','?','?'},
+     {KEY_TAB,'i','l','h','d',',','?','?'},
+     {KEY_CAPS_LOCK,'z','c','x','n','u',';','\''},
+     {KEY_LEFT_SHIFT,'p','[','v','w',';','/','?'},
+     {KEY_LEFT_CTRL,KEY_LEFT_GUI,KEY_LEFT_ALT,'?','?',KEY_RIGHT_SHIFT,KEY_RIGHT_CTRL,KEY_RETURN}},
+    //right
+    {{'?',254,'6','7','8','9','0',KEY_BACKSPACE},
+     {'?','?','m','a','.','g',']','?'},
+     {'[',']','s','y','\'','`','b','\''},
+     {'=','?','r','k',',','.','o','?'},
      {KEY_RETURN,KEY_BACKSPACE,' ',KEY_LEFT_ARROW,KEY_UP_ARROW,KEY_RIGHT_ARROW,KEY_DOWN_ARROW,'?'}}
   }
 };
@@ -99,7 +122,7 @@ char prevState[][5][8]={
    {0,0,0,0,0,0,0,0}}
 };
 
-uint8_t matrixSize = sizeof(layout_left);
+uint8_t matrixSize = sizeof(keys[LEFT]);
 uint8_t row = 0;
 uint8_t col = 0;;
 
@@ -161,16 +184,16 @@ void sendPreses(){ // here we send presses to PC
     for(int col=0;col<8;col++){
       //right part
       if(keys[RIGHT][row][col]<prevState[RIGHT][row][col]){ //if button press after being unpresed
-        Keyboard.press(layout[currentLayout][RIGHT][row][col]);
-      }else if(keys_right[row][col]>prevState_right[row][col]){
-        Keyboard.release(layout[currentLayout][RIGHT][row][col]);
+        Keyboard.press(layouts[currentLayout][RIGHT][row][col]);
+      }else if(keys[RIGHT][row][col]>prevState[RIGHT][row][col]){
+        Keyboard.release(layouts[currentLayout][RIGHT][row][col]);
       }
 
       //left part
       if(keys[LEFT][row][col]<prevState[LEFT][row][col]){ //if button press after being unpresed
-        Keyboard.press(layout[currentLayout][LEFT][row][col]);
+        Keyboard.press(layouts[currentLayout][LEFT][row][col]);
       }else if(keys[LEFT][row][col]>prevState[LEFT][row][col]){
-        Keyboard.release(layout[currentLayout][LEFT][row][col]);
+        Keyboard.release(layouts[currentLayout][LEFT][row][col]);
       }
     }
   }
@@ -178,18 +201,13 @@ void sendPreses(){ // here we send presses to PC
 void loop() {
     if(digitalRead(9) != LOW){
       readMatrix();
-      //readMatrix_left();
       sendPreses();
       //saving current state as previous
-      /*
       for(int i = 0; i<5; i++){
-        memcpy(prevState_left[i], keys_left[i], sizeof(keys_left[i]));
-      }*/
-      for(int i = 0; i<5; i++){
-        memcpy(prevState_right[i], keys_right[i], sizeof(keys_right[i]));
+        memcpy(prevState[RIGHT][i], keys[RIGHT][i], sizeof(keys[RIGHT][i]));
       }
       for(int i = 0; i<5; i++){
-        memcpy(prevState_left[i], keys_left[i], sizeof(keys_left[i]));
+        memcpy(prevState[LEFT][i], keys[LEFT][i], sizeof(keys[LEFT][i]));
       }
     }else{
       Keyboard.releaseAll();
