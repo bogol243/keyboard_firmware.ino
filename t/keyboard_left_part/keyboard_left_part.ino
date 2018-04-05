@@ -1,7 +1,7 @@
 #include <Wire.h>
 
 
-byte rows[] = {5,6,7,8,9};//open collector
+byte rows[] = {5,6,7,4,9};//open collector
 const int rowCount = 5;
 
 byte cols[] = {10,16,14,15,18,19,20,21};//input pullup
@@ -16,14 +16,15 @@ uint8_t keys[5][8]={{0,0,0,0,0,0,0,0},
 void setup(){
     Wire.begin(8);
     Wire.onRequest(sendPreses);
-    
+    //Serial.begin(9600);
+    //while(!Serial);
     for(int x=0; x<rowCount; x++) {
-        //Serial.print(rows[x]); Serial.println(" as input");
+       // Serial.print(rows[x]); Serial.println(" as input");
         pinMode(rows[x], INPUT);
     }
  
     for (int x=0; x<colCount; x++) {
-        //Serial.print(cols[x]); Serial.println(" as input-pullup");
+       // Serial.print(cols[x]); Serial.println(" as input-pullup");
         pinMode(cols[x], INPUT_PULLUP);
     }
 }
@@ -65,8 +66,8 @@ void printMatrix() {
 
 
 void sendPreses(){
-  Serial.println("send preses");
-  readMatrix();
+  //readMatrix();
+  //printMatrix();
   Wire.write(keys[0],40);//write 40 bytes to master
   
   
@@ -75,7 +76,7 @@ void sendPreses(){
 void loop() {
   readMatrix();
   //printMatrix();
-  delay(100);
+  //delay(100);
 }
 
 

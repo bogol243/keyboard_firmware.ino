@@ -1,32 +1,48 @@
 #include <Keyboard.h>
 #include <Wire.h>
-
-//
-#define QWERTY 0
-#define WORKMAN_NATIVE 1
-#define WORKMAN_PHONETIC 2
 #define LEFT 0
 #define RIGHT 1
 
-// I decided to use this values because its represents symbols like ┤╡╢
-// which nobody defenetly won't use by direct typing
-#define LAYOUT_TYPE_SWITCH 180
-#define LAYOUT_NEXT 181
-#define LAYOUT_PREV 182
+byte currentLayout = 0; 
 
-#define QUASI_RUSSIAN_SPEC_SYMBOLS 183
+//right part
+byte rows_right[] = {5,6,7,8,4};//open collector
+const int rowCount = sizeof(rows_right)/sizeof(rows_right[0]);
 
+byte cols_right[] = {10,16,14,15,18,19,20,21};//input pullup
+const int colCount = sizeof(cols_right)/sizeof(cols_right[0]);
 
-unsigned char currentLayout = 0;
+byte keys[][5][8] = {
+   //left
+  {{0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0}}
+  ,//right
+  {{0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0}}
+};
 
-
-
-byte rows[] = {5,6,7,8,4};//open collector
-const int rowCount = sizeof(rows)/sizeof(rows);
-
-byte cols[] = {10,16,14,15,18,19,20,21};//input pullup
-const int colCount = sizeof(cols)/sizeof(cols);
-
+//array to store previous keys state
+char prevState[][5][8]={
+   //left
+  {{0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0}}
+  ,//right
+  {{0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0},
+   {0,0,0,0,0,0,0,0}}
+};
+                                 
 unsigned char layouts[][2][5][8]={
   //QWERTY
   {
@@ -90,72 +106,38 @@ unsigned char layouts[][2][5][8]={
   }
 };
 
-//array to store current keys state
-byte keys[][5][8] = {
-   //left
-  {{0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0}}
-  ,//right
-  {{0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0}}
-};
-
-//array to store previous keys state
-char prevState[][5][8]={
-   //left
-  {{0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0}}
-  ,//right
-  {{0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0}}
-};
-
-uint8_t matrixSize = sizeof(keys[LEFT]);
+uint8_t matrixSize = sizeof(layouts[LEFT]);
 uint8_t row = 0;
 uint8_t col = 0;;
 
 
 void setup() {
-    pinMode(9,INPUT_PULLUP);//emergency stop
+    pinMode(9,INPUT_PULLUP);
     Wire.begin();
     Keyboard.begin();
     
     for(int x=0; x<rowCount; x++) {
         //Serial.print(rows[x]); Serial.println(" as input");
-        pinMode(rows[x], INPUT);
+        pinMode(rows_right[x], INPUT);
     }
  
     for (int x=0; x<colCount; x++) {
         //Serial.print(cols[x]); Serial.println(" as input-pullup");
-        pinMode(cols[x], INPUT_PULLUP);
+        pinMode(cols_right[x], INPUT_PULLUP);
     }
 }
 void readMatrix() {
     // iterate the columns
-    
-    Wire.requestFrom(8,40);//while we read state of matrix here, another arduino do
-                           //the same thing at its side 
+    Wire.requestFrom(8,40);
     for (int colIndex=0; colIndex < colCount; colIndex++) {
         // col: set to output to low
-        byte curCol = cols[colIndex];
+        byte curCol = cols_right[colIndex];
         pinMode(curCol, OUTPUT);
         digitalWrite(curCol, LOW);
  
         // row: interate through the rows
         for (int rowIndex=0; rowIndex < rowCount; rowIndex++) {
-            byte rowCol = rows[rowIndex];
+            byte rowCol = rows_right[rowIndex];
             pinMode(rowCol, INPUT_PULLUP);
             keys[RIGHT][rowIndex][colIndex] = digitalRead(rowCol);
           pinMode(rowCol, INPUT);
@@ -165,10 +147,7 @@ void readMatrix() {
     }
     row = 0;
     col = 0;
-    while (Wire.available()) { // TODO:
-                               // slave may send less than requested
-                               // but unfortunately I don't want control or
-                               // fix it now
+    while (Wire.available()) { // slave may send less than requested
     if(col>7) {
       col = 0;
       row++;  
@@ -179,17 +158,20 @@ void readMatrix() {
 
 
 
-void sendPreses(){ // here we send presses to PC
+void sendPreses(){
   for(int row=0;row<5;row++){
     for(int col=0;col<8;col++){
       //right part
+      char trigger = layouts[currentLayout][RIGHT][row][col];
       if(keys[RIGHT][row][col]<prevState[RIGHT][row][col]){ //if button press after being unpresed
-        Keyboard.press(layouts[currentLayout][RIGHT][row][col]);
+        Keyboard.press(trigger);
       }else if(keys[RIGHT][row][col]>prevState[RIGHT][row][col]){
-        Keyboard.release(layouts[currentLayout][RIGHT][row][col]);
+        Keyboard.release(trigger);
       }
 
+      
       //left part
+      trigger = layouts[currentLayout][LEFT][row][col];
       if(keys[LEFT][row][col]<prevState[LEFT][row][col]){ //if button press after being unpresed
         Keyboard.press(layouts[currentLayout][LEFT][row][col]);
       }else if(keys[LEFT][row][col]>prevState[LEFT][row][col]){
@@ -201,17 +183,12 @@ void sendPreses(){ // here we send presses to PC
 void loop() {
     if(digitalRead(9) != LOW){
       readMatrix();
+      //readMatrix_left();
       sendPreses();
       //saving current state as previous
-      for(int i = 0; i<5; i++){
-        memcpy(prevState[RIGHT][i], keys[RIGHT][i], sizeof(keys[RIGHT][i]));
-      }
-      for(int i = 0; i<5; i++){
-        memcpy(prevState[LEFT][i], keys[LEFT][i], sizeof(keys[LEFT][i]));
-      }
+      memcpy(prevState[0], keys[0], sizeof(keys));
     }else{
       Keyboard.releaseAll();
     }
 }
-
 
